@@ -1,0 +1,15 @@
+# Developer-specific local configuration
+config/developer.local.yaml
+
+# Environment / secrets
+.env
+.env.*
+*.secret
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

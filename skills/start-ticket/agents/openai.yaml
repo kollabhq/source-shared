@@ -1,0 +1,3 @@
+interface:
+  display_name: "Start Ticket"
+  short_description: "Analyze Jira ticket before implementation"

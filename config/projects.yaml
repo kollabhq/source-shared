@@ -1,0 +1,30 @@
+version: 1
+
+projects:
+  KDV:
+    name: Kollab
+    repository: kollab
+    default_branch: main
+    jira_project_key: KDV
+
+repositories:
+  kollab:
+    description: Main Kollab application repository
+
+branching:
+  format: "{developer}/{ticket}"
+
+workflow:
+  ticket_workspace_root_name: ticket-analysis
+
+  start_ticket:
+    repository_access: read_only
+    database_access: read_only
+    create_branch: false
+    modify_source_code: false
+    modify_jira: false
+
+  implement_ticket:
+    require_developer_approval: true
+    require_clean_working_tree: true
+    fetch_remote_before_branching: true

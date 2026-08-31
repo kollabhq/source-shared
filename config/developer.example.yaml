@@ -1,0 +1,17 @@
+developer:
+  name: Your Name
+  branch_prefix: yourname
+
+paths:
+  ticket_analysis_root: D:\ticket-analysis
+
+repositories:
+  kollab:
+    path: D:\kollab
+
+mcp:
+  jira:
+    server_name: atlassian
+
+  supabase:
+    server_name: supabase
