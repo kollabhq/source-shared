@@ -6,13 +6,8 @@ Write-Host " source-shared setup"
 Write-Host "========================================"
 Write-Host ""
 
-# ------------------------------------------------------------
-# Resolve source-shared repository
-# ------------------------------------------------------------
-
 $SourceSharedRoot = Split-Path -Parent $PSScriptRoot
 
-$SkillSource = Join-Path $SourceSharedRoot "skills\start-ticket"
 $ProjectsConfig = Join-Path $SourceSharedRoot "config\projects.yaml"
 $DeveloperConfig = Join-Path $SourceSharedRoot "config\developer.local.yaml"
 
@@ -20,23 +15,30 @@ Write-Host "Source repository:"
 Write-Host "  $SourceSharedRoot"
 Write-Host ""
 
-# ------------------------------------------------------------
-# Validate required files
-# ------------------------------------------------------------
-
-$RequiredFiles = @(
-    (Join-Path $SkillSource "SKILL.md"),
-    (Join-Path $SkillSource "assets\analysis-template.md"),
-    (Join-Path $SkillSource "assets\checklist-template.md"),
+$RequiredConfig = @(
     $ProjectsConfig,
     $DeveloperConfig
 )
 
-foreach ($File in $RequiredFiles) {
+foreach ($File in $RequiredConfig) {
     if (-not (Test-Path $File)) {
         Write-Host "ERROR: Required file not found:" -ForegroundColor Red
         Write-Host "  $File" -ForegroundColor Red
-        Write-Host ""
+        exit 1
+    }
+}
+
+$Skills = @(
+    "start-ticket",
+    "implement-ticket"
+)
+
+foreach ($SkillName in $Skills) {
+    $SkillSource = Join-Path $SourceSharedRoot "skills\$SkillName"
+    $SkillFile = Join-Path $SkillSource "SKILL.md"
+
+    if (-not (Test-Path $SkillFile)) {
+        Write-Host "ERROR: Missing SKILL.md for $SkillName" -ForegroundColor Red
         exit 1
     }
 }
@@ -44,54 +46,42 @@ foreach ($File in $RequiredFiles) {
 Write-Host "Required files: OK" -ForegroundColor Green
 Write-Host ""
 
-# ------------------------------------------------------------
-# Destination paths
-# ------------------------------------------------------------
-
 $CodexSkillsRoot = Join-Path $HOME ".agents\skills"
 $ClaudeSkillsRoot = Join-Path $HOME ".claude\skills"
 
-$CodexDestination = Join-Path $CodexSkillsRoot "start-ticket"
-$ClaudeDestination = Join-Path $ClaudeSkillsRoot "start-ticket"
-
-# ------------------------------------------------------------
-# Helper function
-# ------------------------------------------------------------
-
-function Install-StartTicketSkill {
+function Install-SharedSkill {
     param(
         [Parameter(Mandatory = $true)]
-        [string]$Destination,
+        [string]$SkillName,
+
+        [Parameter(Mandatory = $true)]
+        [string]$SkillsRoot,
 
         [Parameter(Mandatory = $true)]
         [string]$ClientName
     )
 
-    Write-Host "Installing start-ticket for $ClientName..."
+    $SkillSource = Join-Path $SourceSharedRoot "skills\$SkillName"
+    $Destination = Join-Path $SkillsRoot $SkillName
 
-    # Ensure parent skill directory exists.
-    $ParentDirectory = Split-Path -Parent $Destination
+    Write-Host "Installing $SkillName for $ClientName..."
 
-    if (-not (Test-Path $ParentDirectory)) {
-        New-Item -ItemType Directory -Path $ParentDirectory -Force | Out-Null
+    if (-not (Test-Path $SkillsRoot)) {
+        New-Item -ItemType Directory -Path $SkillsRoot -Force | Out-Null
     }
 
-    # Replace only our own installed skill.
-    # Never modify other skills.
     if (Test-Path $Destination) {
         Remove-Item $Destination -Recurse -Force
     }
 
     New-Item -ItemType Directory -Path $Destination -Force | Out-Null
 
-    # Copy the shared skill.
     Copy-Item `
         -Path (Join-Path $SkillSource "*") `
         -Destination $Destination `
         -Recurse `
         -Force
 
-    # Runtime config travels with the installed skill.
     $ReferencesDirectory = Join-Path $Destination "references"
 
     New-Item `
@@ -112,52 +102,47 @@ function Install-StartTicketSkill {
     Write-Host "  Installed: $Destination" -ForegroundColor Green
 }
 
-# ------------------------------------------------------------
-# Install Codex skill
-# ------------------------------------------------------------
+foreach ($SkillName in $Skills) {
 
-Install-StartTicketSkill `
-    -Destination $CodexDestination `
-    -ClientName "Codex"
+    Install-SharedSkill `
+        -SkillName $SkillName `
+        -SkillsRoot $CodexSkillsRoot `
+        -ClientName "Codex"
 
-Write-Host ""
+    Install-SharedSkill `
+        -SkillName $SkillName `
+        -SkillsRoot $ClaudeSkillsRoot `
+        -ClientName "Claude Code"
 
-# ------------------------------------------------------------
-# Install Claude skill
-# ------------------------------------------------------------
-
-Install-StartTicketSkill `
-    -Destination $ClaudeDestination `
-    -ClientName "Claude Code"
-
-Write-Host ""
-
-# ------------------------------------------------------------
-# Summary
-# ------------------------------------------------------------
+    Write-Host ""
+}
 
 Write-Host "========================================"
 Write-Host " Setup complete"
 Write-Host "========================================"
 Write-Host ""
 
-Write-Host "Codex:"
-Write-Host "  $CodexDestination"
-Write-Host ""
+Write-Host "Installed skills:"
+foreach ($SkillName in $Skills) {
+    Write-Host "  - $SkillName"
+}
 
-Write-Host "Claude Code:"
-Write-Host "  $ClaudeDestination"
 Write-Host ""
+Write-Host "Codex skills root:"
+Write-Host "  $CodexSkillsRoot"
 
+Write-Host ""
+Write-Host "Claude Code skills root:"
+Write-Host "  $ClaudeSkillsRoot"
+
+Write-Host ""
 Write-Host "Developer configuration copied from:"
 Write-Host "  $DeveloperConfig"
-Write-Host ""
 
-Write-Host "IMPORTANT:"
-Write-Host "  Re-run this setup script whenever shared"
-Write-Host "  skill files or local developer config change."
 Write-Host ""
-
-Write-Host "Next Codex test:"
-Write-Host '  $start-ticket KDV-22'
+Write-Host "Commands:"
+Write-Host '  Codex: $start-ticket KDV-22'
+Write-Host '  Codex: $implement-ticket KDV-22'
+Write-Host '  Claude: /start-ticket KDV-22'
+Write-Host '  Claude: /implement-ticket KDV-22'
 Write-Host ""
